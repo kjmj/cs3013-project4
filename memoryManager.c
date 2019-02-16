@@ -16,29 +16,29 @@ int main(int argc, char *argv[]) {
         int pid = atoi(strtok(input, delim));
         char *instruction = strtok(NULL, delim);
         int virtualAddress = atoi(strtok(NULL, delim));
-        int meaning = atoi(strtok(NULL, delim));
+        int value = atoi(strtok(NULL, delim));
 
         // verify input
-        verifyInput(pid, instruction, virtualAddress, meaning);
+        verifyInput(pid, instruction, virtualAddress, value);
 
         // run the instruction
         if(strcmp(instruction, "map")) {
-            map(pid, virtualAddress, meaning);
+            map(pid, virtualAddress, value);
         } else if(strcmp(instruction, "store")) {
-            store(pid, virtualAddress, meaning);
+            store(pid, virtualAddress, value);
         } else if(strcmp(instruction, "load")) {
             load(pid, virtualAddress);
         }
     }
 }
 
-int map(int pid, int virtualAddress, int meaning) {
+int map(int pid, int virtualAddress, int value) {
 
     return 0;
 }
 
 
-int store(int pid, int virtualAddress, int meaning) {
+int store(int pid, int virtualAddress, int value) {
 
     return 0;
 }
@@ -51,7 +51,7 @@ int load(int pid, int virtualAddress) {
 /**
  * verify the users input
  */
-void verifyInput(int pid, char *instruction, int virtualAddress, int meaning) {
+void verifyInput(int pid, char *instruction, int virtualAddress, int value) {
     if(pid < 0 || pid > 3) {
         printf("Please enter a process_id in the range [0, 3]\n");
         exit(1);
@@ -64,8 +64,8 @@ void verifyInput(int pid, char *instruction, int virtualAddress, int meaning) {
         printf("Please enter a virtual_address in the range [0, 63]\n");
         exit(1);
     }
-    if(meaning < 0 || meaning > 255) {
-        printf("Please enter a meaning in the range [0, 255]\n");
+    if(value < 0 || value > 255) {
+        printf("Please enter a value in the range [0, 255]\n");
         exit(1);
     }
 }
