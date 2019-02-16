@@ -3,30 +3,51 @@
 int main(int argc, char *argv[]) {
 
     char input[16]; // store the user input
-
-    printf("Instruction? ");
-    fgets(input, sizeof(input), stdin); // read in input
-    input[strcspn(input, "\n")] = '\0'; // remove the trailing '\n' character
-
     char *delim = ","; // users input is separated by a comma
 
-    // work through the input
-    int pid = atoi(strtok(input, delim));
-    char *instruction = strtok(NULL, delim);
-    int virtualAddress = atoi(strtok(NULL, delim));
-    int meaning = atoi(strtok(NULL, delim));
+    while(1) {
 
-    // verify input
-    verifyInput(pid, instruction, virtualAddress, meaning);
+        // prompt user for input
+        printf("Instruction? ");
+        fgets(input, sizeof(input), stdin); // read in input
+        input[strcspn(input, "\n")] = '\0'; // remove the trailing '\n' character
 
-    printf("pid: %d\n", pid);
-    printf("instruction: %s\n", instruction);
-    printf("virtualAddress: %d\n", virtualAddress);
-    printf("meaning: %d\n", meaning);
+        // parse user input
+        int pid = atoi(strtok(input, delim));
+        char *instruction = strtok(NULL, delim);
+        int virtualAddress = atoi(strtok(NULL, delim));
+        int meaning = atoi(strtok(NULL, delim));
+
+        // verify input
+        verifyInput(pid, instruction, virtualAddress, meaning);
+
+        // run the instruction
+        if(strcmp(instruction, "map")) {
+            map(pid, virtualAddress, meaning);
+        } else if(strcmp(instruction, "store")) {
+            store(pid, virtualAddress, meaning);
+        } else if(strcmp(instruction, "load")) {
+            load(pid, virtualAddress);
+        }
+    }
+}
+
+int map(int pid, int virtualAddress, int meaning) {
 
     return 0;
 }
 
+
+int store(int pid, int virtualAddress, int meaning) {
+
+    return 0;
+}
+
+
+int load(int pid, int virtualAddress) {
+
+    return 0;
+}
 /**
  * verify the users input
  */
