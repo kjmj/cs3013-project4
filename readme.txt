@@ -40,3 +40,34 @@ To clean:
 
 
 ----- Testing -----
+Here is a basic test:
+    kenneth@kenneth-VirtualBox:~/Documents/cs3103/cs3013-project4$ ./memoryManager
+    Instruction? 0,map,0,1
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,store,12,24
+    Stored value 24 at virtual address 12 (physical address 28)
+    Instruction? 0,load,12,0
+    The value 24 is virtual address 12  (physical address 28)
+    Instruction? ^C
+
+Here is a test with multiple processes:
+    kenneth@kenneth-VirtualBox:~/Documents/cs3103/cs3013-project4$ ./memoryManager
+    Instruction? 0,map,0,1
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,store,12,24
+    Stored value 24 at virtual address 12 (physical address 28)
+    Instruction? 1,map,16,1
+    Put page table for PID 1 into physical frame 2
+    Mapped virtual address 16 (page 1) into physical frame 3
+    Instruction? 1,store,5,6
+    Stored value 6 at virtual address 5 (physical address 53)
+    Instruction? 0,load,12,0
+    The value 24 is virtual address 12  (physical address 28)
+    Instruction? 1,load,5,0
+    The value 6 is virtual address 5  (physical address 53)
+    Instruction? ^C
+
+
+TODO: testing for swapping to disk and some edge cases/illegal instructions
