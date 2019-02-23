@@ -69,5 +69,64 @@ Here is a test with multiple processes:
     The value 6 is virtual address 5  (physical address 53)
     Instruction? ^C
 
+Here is a test with mapping and swapping to disk
+    Instruction? 0,map,0,1
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,map,16,1
+    page table exists for that process and mapping this virtual page
+    Mapped virtual address 16 (page 1) into physical frame 2
+    Instruction? 0,map,32,1
+    page table exists for that process and mapping this virtual page
+    Mapped virtual address 32 (page 2) into physical frame 3
+    Instruction? 0,map,48,1
+    page table exists for that process and mapping this virtual page
+    Swapping!!!!
+    check if evicted page 3 is a page table
+    evicted page 3 is not a page table
+    found page table on board vpn 2, pid 0
+    Swapped frame 3 to disk at swap slot 0
+    Mapped virtual address 48 (page 2) into physical frame 3
+
+Here is a test with mapping and swapping to disk
+    Instruction? 0,map,0,1
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,map,16,1
+    page table exists for that process and mapping this virtual page
+    Mapped virtual address 16 (page 1) into physical frame 2
+    Instruction? 0,map,32,1
+    page table exists for that process and mapping this virtual page
+    Mapped virtual address 32 (page 2) into physical frame 3
+    Instruction? 1,map,0,1
+    Swapping!!!!
+    check if evicted page 3 is a page table
+    evicted page 3 is not a page table
+    found page table on board vpn 2, pid 0
+    Swapped frame 3 to disk at swap slot 0
+    Swapping!!!!
+    check if evicted page 1 is a page table
+    evicted page 1 is not a page table
+    found page table on board vpn 0, pid 0
+    Swapped frame 1 to disk at swap slot 1
+    Put page table for PID 1 into physical frame 3
+    Mapped virtual address 0 (page 0) into physical frame 1
+
+Here is a test with illegal instructions
+    Instruction? 0,map,0,0
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,store,7,255
+    Error, cannot write to this page as it is read only
+
+
+Here is a test with updating writing permission
+    Instruction? 0,map,0,0
+    Put page table for PID 0 into physical frame 0
+    Mapped virtual address 0 (page 0) into physical frame 1
+    Instruction? 0,store,7,255
+    Error, cannot write to this page as it is read only
+    Instruction? 0,map,0,1
+    Updating permissions for virtual page 0 (frame 1)
 
 TODO: testing for swapping to disk and some edge cases/illegal instructions
