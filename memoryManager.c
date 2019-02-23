@@ -105,8 +105,8 @@ int map(int pid, int virtualAddress, int value, FILE *disk) {
                 if (pagTabEvictPID == -1) {
                     printf("evicted page %d is not a page table\n", pageEvict);
                     //evicted not page table
-                    int vpn = -1; //store the vpn for evicted physical frame
-                    int pid = -1; //pid for the evicted page
+                    vpn = -1; //store the vpn for evicted physical frame
+                    pid = -1; //pid for the evicted page
                     int pageTableEvictFrame = -1;
                     // find which process this physical frame belong to
                     for (int i = 0; i < PAGE_FRAMES; i++) {
@@ -146,10 +146,11 @@ int map(int pid, int virtualAddress, int value, FILE *disk) {
                         swapSlot++;
                         // now there is free physical frame
                         // map it in the page table updated
-                        memory[frameAddr + pageTableOffset] = pid;
-                        memory[frameAddr + pageTableOffset + VPN_BIT] = vpn;
-                        memory[frameAddr + pageTableOffset + PFN_BIT] = pageEvict;
-                        memory[frameAddr + pageTableOffset + VAL_BIT] = value;
+                        pageTableOffset = vpn * PAGE_FRAMES;
+                        memory[pageTableEvictFrame + pageTableOffset] = pid;
+                        memory[pageTableEvictFrame + pageTableOffset + VPN_BIT] = vpn;
+                        memory[pageTableEvictFrame + pageTableOffset + PFN_BIT] = pageEvict;
+                        memory[pageTableEvictFrame + pageTableOffset + VAL_BIT] = value;
                         //record the virtual map address is mapped now
                         virPagMapInfo[pid * PAGE_FRAMES + vpn] = MAPPED;
                         printf("Mapped virtual address %d (page %d) into physical frame %d\n", virtualAddress, vpn,
@@ -238,6 +239,7 @@ int map(int pid, int virtualAddress, int value, FILE *disk) {
                     // now there is free physical frame
                     // map it in the page table updated
                     pte = pageEvict;
+
                 }
             } else {
                 // evicted page is page table for process pagTabEvictPID
@@ -467,12 +469,7 @@ int store(int pid, int virtualAddress, int value, FILE *disk) {
 int load(int pid, int virtualAddress, FILE *disk) {
     int vpn = virtualAddress / PAGE_SIZE;
     int offset = virtualAddress - vpn * PAGE_SIZE;
-
-    int needToSwap = 0;
-    if (needToSwap == 1) { // no space, we must swap
-        // todo handling the case where there is no free page table entry
-
-    } else {
+    if (virPagMapInfo[pid * PAGE_FRAMES + vpn] == MAPPED) {
         int frameAddr = hardwareReg[pid] * PAGE_SIZE;
         int pageTableOffset = vpn * 4;
 
@@ -481,8 +478,85 @@ int load(int pid, int virtualAddress, FILE *disk) {
 
         int value = memory[physicalAddress];
         printf("The value %d is virtual address %d  (physical address %d)\n", value, virtualAddress, physicalAddress);
-    }
+    } else if (virPagMapInfo[pid * PAGE_FRAMES + vpn] == ONDISK){
+        // swap
+        printf("Swapping!!!!\n");
+        // pick random a page to evict.
+        int pageEvict = rand() % (PAGE_FRAMES); //random number from 0 to 3
+        /*
+         * write the evicted page to disk
+        */
+        int pagTabEvictPID = -1; // process id 's page table ejected
+        // check if the evicted page is a page table
+        for (int i = 0; i < PAGE_FRAMES; i++) {
+            if (hardwareReg[i] == pageEvict) {
+                // page table evicted
+                pagTabEvictPID = i;
+            }
+        }
+        printf("check if evicted page %d is a page table\n", pageEvict);
+        if (pagTabEvictPID == -1) {
+            printf("evicted page %d is not a page table\n", pageEvict);
+            //evicted not page table
+            int vpn = -1; //store the vpn for evicted physical frame
+            int pid = -1; //pid for the evicted page
+            int pageTableEvictFrame = -1;
+            // find which process this physical frame belong to
+            for (int i = 0; i < PAGE_FRAMES; i++) {
+                if (hardwareReg[i] != UNMAPPED && hardwareReg[i] != ONDISK) {
+                    // page table for pid i is on board and check if that maps the evicted
+                    for (int j = 0; j < PAGE_FRAMES; j++) {
+                        int frameAddrEv = hardwareReg[i] * PAGE_SIZE;
+                        if (memory[frameAddrEv + j * PAGE_FRAMES + PFN_BIT] == pageEvict) {
+                            // found the page table on memory
+                            pageTableEvictFrame = hardwareReg[i]; //where the page table is on the memory
+                            vpn = memory[frameAddrEv + j * PAGE_FRAMES + VPN_BIT];
+                            pid = memory[frameAddrEv + j * PAGE_FRAMES];
+                            memory[frameAddrEv + j * PAGE_FRAMES +
+                                   PFN_BIT] = ONDISK; //update the page table indicate swapped frame is in disk now
+                            virPagMapInfo[pid * PAGE_FRAMES + vpn] = ONDISK; // record that page table is on the
+                            printf("found page table on board vpn %d, pid %d\n", vpn, pid);
+                            break;
+                        }
+                    }
+                }
+            }
+            // page table for pid i is on board and check if that maps the evicted
+            if (vpn != -1 && pid != -1) {
+                //found the page table on memory
+                unsigned char memoryBuff[PAGE_SIZE];
+                //save the memory frame to a temporary buffer
+                for (int i = 0; i < PAGE_SIZE; i++) {
+                    memoryBuff[i] = memory[pageEvict * PAGE_SIZE + i];
+                }
+                //write to disk at appropriate location
+                fseek(disk, (pid * PAGE_FRAMES + vpn) * PAGE_SIZE, SEEK_SET);
+                fwrite(memoryBuff, 1, sizeof(memoryBuff), disk);
+                // empty the memory physical frame evicted
+                for (int i = 0; i < PAGE_SIZE; i++) {
+                    memory[pageEvict * PAGE_SIZE + i] = 0;
+                }
+                printf("Swapped frame %d to disk at swap slot %d\n", pageEvict, swapSlot);
+                swapSlot--;
+                // now there is free physical frame
+                unsigned char memoryBuffRead[PAGE_SIZE];
+                fseek(disk, (pid * PAGE_FRAMES + vpn) * PAGE_SIZE, SEEK_SET);
+                fread(memoryBuffRead, sizeof(memoryBuffRead), 1, disk);
+                // load on to memory
+                for(int i = 0; i < 16; i++){
+                    memory[pageEvict * PAGE_SIZE + i] = memoryBuffRead[i];
+                }
+                int physicalAddress = pageEvict * PAGE_SIZE + offset;
+                int value = memory[physicalAddress];
+                printf("The value %d is virtual address %d  (physical address %d)\n", value, virtualAddress, physicalAddress);
+            }
+        } else {
+            // evicted page is page table for process pagTabEvictPID
+            printf("evicted page %d is page table for process %d", pageEvict, pagTabEvictPID);
+            return -1;
+        }
 
+    }
     return 0;
 }
 
