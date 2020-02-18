@@ -1,5 +1,3 @@
-This project is in process and will change drastically over the next few days.
-
 ----- Overview -----
 This project simulates virtual memory using paging and swapping.
 
